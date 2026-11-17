@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simpan — Savings Goal Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0f1220;
+    --bg-soft: #171b2e;
+    --card: #1c2138;
+    --card-edge: rgba(255, 255, 255, 0.07);
+    --text: #eef0f8;
+    --muted: #9aa1c0;
+    --mint: #34d99b;
+    --mint-deep: #0e9f6e;
+    --gold: #f5c451;
+    --coral: #ff6b81;
+    --violet: #8b7cf6;
+    --radius: 20px;
+    --shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.65);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(900px 500px at 85% -10%, rgba(139, 124, 246, 0.16), transparent 60%),
+      radial-gradient(800px 480px at -10% 110%, rgba(52, 217, 155, 0.12), transparent 60%);
+    display: flex;
+    justify-content: center;
+    padding: 48px 20px;
+  }
+
+  .app { width: 100%; max-width: 1060px; }
+
+  /* ---------- Header ---------- */
+  header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+
+  .logo {
+    width: 52px; height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--mint), var(--violet));
+    display: grid; place-items: center;
+    font-size: 26px;
+    box-shadow: 0 10px 30px -8px rgba(52, 217, 155, 0.5);
+  }
+
+  .brand h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand p { color: var(--muted); font-size: 14px; margin-top: 2px; }
+
+  /* ---------- Layout ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-edge);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px;
+  }
+
+  .stack { display: flex; flex-direction: column; gap: 24px; }
+
+  .card-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-label::before {
+    content: "";
+    width: 8px; height: 8px; border-radius: 3px;
+    background: var(--mint);
+  }
+
+  /* ---------- Goal panel ---------- */
+  .goal-amounts { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+
+  .saved {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--mint);
+    letter-spacing: -0.02em;
+  }
+
+  .target {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 18px;
+    color: var(--muted);
+  }
+
+  .goal-meta {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    background: var(--bg-soft);
+    border: 1px solid var(--card-edge);
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chip strong { color: var(--text); font-weight: 700; }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Progress bar */
+  .progress-wrap { margin: 8px 0 24px; }
+
+  .progress-top {
+    display: flex; justify-content: space-between;
+    font-size: 13px; color: var(--muted); margin-bottom: 10px;
+  }
+  .progress-top strong { color: var(--text); }
+
+  .bar {
+    height: 18px;
+    background: var(--bg-soft);
+    border: 1px solid var(--card-edge);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--mint-deep), var(--mint) 60%, #7ef0c3);
+    box-shadow: 0 0 18px rgba(52, 217, 155, 0.45);
+    transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+  }
+  .bar-fill::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+    animation: shimmer 2.4s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0% { transform: translateX(-100%);} 60%, 100% { transform: translateX(100%);} }
+
+  .remaining {
+    margin-top: 14px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: rgba(245, 196, 81, 0.08);
+    border: 1px solid rgba(245, 196, 81, 0.25);
+    font-size: 14px;
+    color: var(--gold);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .remaining.done {
+    background: rgba(52, 217, 155, 0.1);
+    border-color: rgba(52, 217, 155, 0.3);
+    color: var(--mint);
+  }
+
+  /* ---------- Add money panel ---------- */
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
+
+  .input-row { display: flex; gap: 10px; }
+
+  .rm-input {
+    flex: 1;
+    position: relative;
+    display: flex; align-items: center;
+  }
+  .rm-input span {
+    position: absolute; left: 16px;
+    color: var(--muted); font-weight: 700; font-size: 15px;
+  }
+  .rm-input input {
+    width: 100%;
+    background: var(--bg-soft);
+    border: 1px solid var(--card-edge);
+    border-radius: 12px;
+    padding: 14px 16px 14px 48px;
+    color: var(--text);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 16px;
+    font-weight: 700;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .rm-input input:focus {
+    border-color: var(--mint);
+    box-shadow: 0 0 0 4px rgba(52, 217, 155, 0.15);
+  }
+  .rm-input input::-webkit-outer-spin-button,
+  .rm-input input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .note-input {
+    width: 100%;
+    margin-top: 14px;
+    background: var(--bg-soft);
+    border: 1px solid var(--card-edge);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .note-input:focus {
+    border-color: var(--violet);
+    box-shadow: 0 0 0 4px rgba(139, 124, 246, 0.15);
+  }
+
+  .quick-add { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .quick-add button {
+    background: var(--bg-soft);
+    border: 1px solid var(--card-edge);
+    color: var(--muted);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px; font-weight: 700;
+    padding: 8px 14px; border-radius: 10px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .quick-add button:hover { color: var(--mint); border-color: var(--mint); transform: translateY(-1px); }
+
+  .btn-add {
+    width: 100%;
+    margin-top: 18px;
+    background: linear-gradient(135deg, var(--mint-deep), var(--mint));
+    color: #06281c;
+    font-family: inherit;
+    font-size: 15px; font-weight: 800;
+    padding: 15px;
+    border: none; border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.2s, filter 0.2s;
+    box-shadow: 0 12px 28px -10px rgba(52, 217, 155, 0.55);
+  }
+  .btn-add:hover { filter: brightness(1.07); transform: translateY(-1px); }
+  .btn-add:active { transform: translateY(1px); }
+
+  .form-msg {
+    margin-top: 12px; font-size: 13px; font-weight: 600;
+    min-height: 18px; text-align: center;
+  }
+
+  /* ---------- Entries panel ---------- */
+  .entries { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+  .entry {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--bg-soft);
+    border: 1px solid var(--card-edge);
+    border-radius: 14px;
+    padding: 14px 16px;
+    animation: slideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+  .entry-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .entry-body { flex: 1; min-width: 0; }
+  .entry-note { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .entry-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .entry-amount {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700; font-size: 15px;
+    color: var(--mint);
+  }
+
+  .empty-hint { color: var(--muted); font-size: 13px; text-align: center; padding: 8px 0; }
+
+  footer {
+    margin-top: 24px; text-align: center;
+    color: var(--muted); font-size: 12px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--mint);
+    color: #06281c;
+    font-weight: 800; font-size: 14px;
+    padding: 13px 22px;
+    border-radius: 12px;
+    box-shadow: 0 16px 40px -10px rgba(52, 217, 155, 0.6);
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+    z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">💰</div>
+    <div class="brand">
+      <h1>Simpan</h1>
+      <p>Savings goal planner — track your way to the goal, ringgit by ringgit</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- Left column: goal + add money -->
+    <div class="stack">
+      <!-- Goal panel -->
+      <section class="card">
+        <div class="card-label">Savings Goal</div>
+
+        <div class="goal-amounts">
+          <div class="saved" id="savedAmount">RM 0</div>
+          <div class="target">of <span id="targetAmount">RM 10,000</span></div>
+        </div>
+
+        <div class="goal-meta">
+          <div class="chip"><span class="dot" style="background: var(--violet)"></span>Goal: <strong>Duit Raya &amp; Emergency Fund</strong></div>
+          <div class="chip"><span class="dot" style="background: var(--coral)"></span>Deadline: <strong>31 Dec 2026</strong></div>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-top">
+            <span><strong id="percentText">0%</strong> complete</span>
+            <span id="remainingTop">RM 10,000 to go</span>
+          </div>
+          <div class="bar">
+            <div class="bar-fill" id="barFill"></div>
+          </div>
+          <div class="remaining" id="remainingBox">
+            <span id="remainingIcon">🎯</span>
+            <span id="remainingText">You need RM 10,000 more to reach your goal.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Add money panel -->
+      <section class="card">
+        <div class="card-label">Add Money</div>
+
+        <div class="field">
+          <label for="amountInput">Amount to save now</label>
+          <div class="input-row">
+            <div class="rm-input">
+              <span>RM</span>
+              <input type="number" id="amountInput" min="1" step="0.01" placeholder="0.00" />
+            </div>
+          </div>
+        </div>
+
+        <input type="text" id="noteInput" class="note-input" placeholder="What's this saving for? (e.g. Salary, food delivery)" maxlength="60" />
+
+        <div class="quick-add">
+          <button type="button" onclick="setAmount(50)">+50</button>
+          <button type="button" onclick="setAmount(100)">+100</button>
+          <button type="button" onclick="setAmount(250)">+250</button>
+          <button type="button" onclick="setAmount(500)">+500</button>
+        </div>
+
+        <button class="btn-add" onclick="addMoney()">Add to Savings</button>
+        <div class="form-msg" id="formMsg"></div>
+      </section>
+    </div>
+
+    <!-- Right column: progress + entries -->
+    <section class="card">
+      <div class="card-label">Savings Entries</div>
+      <ul class="entries" id="entriesList"></ul>
+      <div class="empty-hint" id="emptyHint" style="display:none">No entries yet — add your first savings above!</div>
+    </section>
+  </div>
+
+  <footer>Simpan · Sample data is Malaysia-flavoured 💚 · Built for stress-free saving</footer>
+</div>
+
+<div class="toast" id="toast">Added to savings!</div>
+
+<script>
+  // ----- App state -----
+  const GOAL = 10000;
+
+  const sampleEntries = [
+    { note: "Monthly salary savings", amount: 800, date: "1 Nov 2026", icon: "💼" },
+    { note: "Shopee side hustle",     amount: 250, date: "8 Nov 2026", icon: "📦" },
+    { note: "Touch 'n Go cashback",   amount: 40,  date: "12 Nov 2026", icon: "📱" },
+    { note: "Mamak night skip fund",  amount: 35,  date: "14 Nov 2026", icon: "🥘" },
+    { note: "ASB dividend",           amount: 150, date: "16 Nov 2026", icon: "📈" },
+  ];
+
+  let entries = [...sampleEntries];
+
+  // ----- Helpers -----
+  const fmt = n => "RM " + n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtShort = n => "RM " + Math.round(n).toLocaleString("en-MY");
+
+  function totalSaved() {
+    return entries.reduce((sum, e) => sum + e.amount, 0);
+  }
+
+  // ----- Render -----
+  function render() {
+    const total = totalSaved();
+    const pct = Math.min(100, (total / GOAL) * 100);
+    const left = Math.max(0, GOAL - total);
+
+    document.getElementById("savedAmount").textContent = fmt(total);
+    document.getElementById("percentText").textContent = Math.floor(pct) + "%";
+    document.getElementById("barFill").style.width = pct + "%";
+
+    const remainingTop = document.getElementById("remainingTop");
+    const box = document.getElementById("remainingBox");
+    const text = document.getElementById("remainingText");
+    const icon = document.getElementById("remainingIcon");
+
+    if (left <= 0) {
+      remainingTop.textContent = "Goal reached! 🎉";
+      text.textContent = "Syabas! You've reached your savings goal. Time to set a bigger one!";
+      icon.textContent = "🎉";
+      box.classList.add("done");
+    } else {
+      remainingTop.textContent = fmtShort(left) + " to go";
+      text.textContent = `You need ${fmt(left)} more to reach your goal.`;
+      icon.textContent = "🎯";
+      box.classList.remove("done");
+    }
+
+    const list = document.getElementById("entriesList");
+    list.innerHTML = "";
+    const palette = ["var(--mint)", "var(--violet)", "var(--gold)", "var(--coral)"];
+
+    entries.forEach((e, i) => {
+      const li = document.createElement("li");
+      li.className = "entry";
+      const color = palette[i % palette.length];
+      li.innerHTML = `
+        <div class="entry-icon" style="background: color-mix(in srgb, ${color} 18%, transparent); border: 1px solid color-mix(in srgb, ${color} 35%, transparent);">${e.icon || "💵"}</div>
+        <div class="entry-body">
+          <div class="entry-note">${escapeHtml(e.note)}</div>
+          <div class="entry-date">${e.date}</div>
+        </div>
+        <div class="entry-amount">+${fmt(e.amount)}</div>
+      `;
+      list.appendChild(li);
+    });
+
+    document.getElementById("emptyHint").style.display = entries.length ? "none" : "block";
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // ----- Actions -----
+  function setAmount(v) {
+    document.getElementById("amountInput").value = v;
+    document.getElementById("amountInput").focus();
+  }
+
+  function addMoney() {
+    const amountInput = document.getElementById("amountInput");
+    const noteInput = document.getElementById("noteInput");
+    const msg = document.getElementById("formMsg");
+
+    const amount = parseFloat(amountInput.value);
+    msg.style.color = "var(--coral)";
+
+    if (isNaN(amount) || amount <= 0) {
+      msg.textContent = "Please enter a valid amount greater than RM 0.";
+      return;
+    }
+
+    msg.textContent = "";
+    const today = new Date();
+    const dateStr = today.toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" });
+
+    entries.unshift({
+      note: noteInput.value.trim() || "Top-up savings",
+      amount: amount,
+      date: dateStr,
+      icon: "💵",
+    });
+
+    amountInput.value = "";
+    noteInput.value = "";
+    render();
+    showToast(`+${fmt(amount)} added to savings!`);
+
+    if (totalSaved() >= GOAL && totalSaved() - amount < GOAL) {
+      setTimeout(() => showToast("🎉 Goal reached! Syabas!"), 1200);
+    }
+  }
+
+  function showToast(text) {
+    const t = document.getElementById("toast");
+    t.textContent = text;
+    t.classList.add("show");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  document.getElementById("amountInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") addMoney();
+  });
+
+  render();
+</script>
+</body>
+</html>
